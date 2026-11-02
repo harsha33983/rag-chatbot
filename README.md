@@ -20,8 +20,9 @@
      - 🇬🇧 **UK:** Emergency **999**, Samaritans **116 123**
      - 🌐 **International:** [Befrienders Worldwide](https://www.befrienders.org)
 
-3. **Persistent SQL Multi-Turn Memory:**
+### 3. Persistent SQL Multi-Turn Memory:
    - Relational database schema for `users`, `sessions`, and `messages`.
+   - **SQLite by default** (`mindcare.db`) for instant zero-configuration local development. PostgreSQL is also fully supported for production via `DATABASE_URL`.
    - Maintains context across **30 conversational turns (60 messages)** with automatic token budgeting.
    - Enforces strict user authorization: users can never access or query other users' sessions.
 
@@ -157,6 +158,11 @@ Create a `.env` file in the project root:
 Run the automated test suite:
 ```bash
 python scripts/test_safety_and_rag.py
+```
+
+To inspect your local SQLite database anytime:
+```bash
+python scripts/inspect_db.py
 ```
 This verifies:
 1. **Crisis Safety System:** Suicide statements, self-harm, and immediate danger trigger the safety guardrail; non-crisis expressions (e.g. general sadness or exam stress) correctly avoid false positives.

@@ -1,0 +1,2 @@
+# MindCare AI App Package
+

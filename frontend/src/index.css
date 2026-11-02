@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-textMain min-h-screen selection:bg-secondary/30;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom scrollbar for clean calm aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4D8CF;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A9C4B8;
+}
+
+/* Markdown prose rendering */
+.markdown-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.625;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+.markdown-content ul, .markdown-content ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+.markdown-content ul {
+  list-style-type: disc;
+}
+.markdown-content ol {
+  list-style-type: decimal;
+}
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+.markdown-content strong {
+  font-weight: 600;
+  color: #253532;
+}
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #253532;
+}
+
