@@ -13,6 +13,7 @@ from backend.app.schemas.chat import (
     SourceReference
 )
 from backend.app.services.safety_service import safety_service
+from backend.app.services.sentiment_service import sentiment_service
 from backend.app.services.rag_service import rag_service
 from backend.app.services.memory_service import memory_service
 from backend.app.services.llm_service import llm_service
@@ -76,6 +77,7 @@ def send_chat_message(
             role="assistant",
             content=crisis_result.crisis_response,
             sources=None,
+            sentiment={"label": "crisis", "confidence": 1.0, "tone_strategy": "Emergency Escalation"},
             is_crisis=True
         )
         return MessageResponse(
@@ -85,10 +87,19 @@ def send_chat_message(
             content=assistant_msg.content,
             sources=None,
             is_crisis=True,
+            sentiment={"label": "crisis", "confidence": 1.0, "tone_strategy": "Emergency Escalation"},
             created_at=assistant_msg.created_at
         )
 
-    # 4. Memory retrieval (up to 30 conversational turns)
+    # 4. Six-Class Sentiment Analysis & Real-Time Tone Adaptation
+    sentiment_result = sentiment_service.predict(chat_req.message)
+    sentiment_payload = {
+        "label": sentiment_result.label,
+        "confidence": sentiment_result.confidence,
+        "tone_strategy": sentiment_result.tone_strategy
+    }
+
+    # 5. Memory retrieval (preserving 30+ conversational turns)
     history_records = memory_service.get_session_history(db, session_id, current_user.id)
     # Convert previous messages to LLM format (excluding the current user message just saved)
     formatted_history = [
@@ -96,26 +107,28 @@ def send_chat_message(
         for m in history_records[:-1]
     ]
 
-    # 5. RAG Retrieval from Knowledge Base
+    # 6. RAG Retrieval from Knowledge Base
     retrieved_sources = rag_service.search(chat_req.message)
 
-    # 6. Response generation
+    # 7. Response generation with Tone Adaptation
     response_text = llm_service.generate_response(
         user_message=chat_req.message,
         conversation_history=formatted_history,
-        retrieved_sources=retrieved_sources
+        retrieved_sources=retrieved_sources,
+        tone_instruction=sentiment_result.tone_instruction
     )
 
     # Convert sources to serializable dicts
     sources_data = [s.model_dump() for s in retrieved_sources] if retrieved_sources else None
 
-    # 7. Save assistant message
+    # 8. Save assistant message with sources and detected sentiment
     assistant_msg = memory_service.add_message(
         db=db,
         session_id=session_id,
         role="assistant",
         content=response_text,
         sources=sources_data,
+        sentiment=sentiment_payload,
         is_crisis=False
     )
 
@@ -126,6 +139,7 @@ def send_chat_message(
         content=assistant_msg.content,
         sources=retrieved_sources if retrieved_sources else None,
         is_crisis=False,
+        sentiment=sentiment_payload,
         created_at=assistant_msg.created_at
     )
 

@@ -15,12 +15,21 @@ export interface SourceReference {
   score: number;
 }
 
+export interface SentimentData {
+  label?: string;
+  confidence?: number;
+  tone_strategy?: string;
+  tone_instruction?: string;
+  probabilities?: Record<string, number>;
+}
+
 export interface Message {
   id: string;
   session_id: string;
   role: 'user' | 'assistant';
   content: string;
   sources?: SourceReference[];
+  sentiment?: SentimentData;
   is_crisis?: boolean;
   created_at: string;
 }

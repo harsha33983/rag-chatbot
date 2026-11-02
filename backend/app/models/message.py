@@ -12,6 +12,7 @@ class Message(Base):
     role = Column(String(20), nullable=False)  # "user" or "assistant"
     content = Column(Text, nullable=False)
     sources = Column(JSON, nullable=True)  # List of retrieved reference chunks
+    sentiment = Column(JSON, nullable=True)  # Detected emotional state & tone strategy
     is_crisis = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 

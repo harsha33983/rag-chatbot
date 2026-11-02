@@ -114,22 +114,39 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             >
               <div className="markdown-content">{renderFormattedContent(message.content)}</div>
 
-              {/* Source citations pill */}
-              {!isUser && message.sources && message.sources.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-accent-border flex items-center justify-between">
-                  <button
-                    onClick={() => setShowSources(true)}
-                    className="inline-flex items-center space-x-1.5 px-3 py-1 bg-accent text-primary hover:bg-secondary/40 rounded-full text-xs font-medium transition-colors"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>View Grounded Citations ({message.sources.length})</span>
-                  </button>
+              {/* Source citations pill & adapted tone badge */}
+              {!isUser && (
+                <div className="mt-3 pt-3 border-t border-accent-border/70 flex flex-wrap items-center gap-2">
+                  {message.sources && message.sources.length > 0 && (
+                    <button
+                      onClick={() => setShowSources(true)}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 bg-accent text-primary hover:bg-secondary/40 rounded-full text-xs font-medium transition-colors"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>View Grounded Citations ({message.sources.length})</span>
+                    </button>
+                  )}
+
+                  {message.sentiment && (message.sentiment.tone_strategy || message.sentiment.label) && (
+                    <span
+                      title="Tone adapted dynamically based on 6-class sentiment screening (non-clinical wellness support)"
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 bg-secondary text-textMain border border-accent-border rounded-full text-[11px] font-medium"
+                    >
+                      <Sparkles className="w-3 h-3 text-primary" />
+                      <span>Adapted Tone: {message.sentiment.tone_strategy || message.sentiment.label}</span>
+                    </span>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Bubble Footer: Timestamp & Copy */}
             <div className={`flex items-center space-x-2 mt-1 px-1 text-xs text-textMuted ${isUser ? 'justify-end' : 'justify-start'}`}>
+              {isUser && message.sentiment && message.sentiment.label && (
+                <span className="text-[11px] text-textMuted italic mr-1">
+                  Emotion detected: {message.sentiment.label} ({Math.round((message.sentiment.confidence || 0) * 100)}%)
+                </span>
+              )}
               <span>{formattedTime}</span>
               {!isUser && (
                 <button

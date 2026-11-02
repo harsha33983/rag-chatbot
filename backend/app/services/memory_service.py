@@ -72,6 +72,7 @@ class MemoryService:
         role: str,
         content: str,
         sources: Optional[List[dict]] = None,
+        sentiment: Optional[dict] = None,
         is_crisis: bool = False
     ) -> MessageModel:
         message = MessageModel(
@@ -79,6 +80,7 @@ class MemoryService:
             role=role,
             content=content,
             sources=sources,
+            sentiment=sentiment,
             is_crisis=is_crisis,
             created_at=datetime.now(timezone.utc)
         )

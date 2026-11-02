@@ -10,7 +10,7 @@ from backend.app.schemas.knowledge import (
     KnowledgeStatusResponse,
     DocumentUploadResponse
 )
-from knowledge_base.mental_wellness_library import KNOWLEDGE_DOCUMENTS
+from knowledge_base.mental_wellness_500 import KNOWLEDGE_DOCUMENTS_500
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/knowledge", tags=["Knowledge Management"])
 def get_knowledge_status():
     status_info = rag_service.get_status()
     # List unique categories present in default library
-    categories = sorted(list(set(d["category"] for d in KNOWLEDGE_DOCUMENTS)))
+    categories = sorted(list(set(d["category"] for d in KNOWLEDGE_DOCUMENTS_500)))
     return KnowledgeStatusResponse(
         total_vectors=status_info["total_vectors"],
         collection_name=status_info["collection_name"],
@@ -35,28 +35,21 @@ def ingest_documents(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Ingest default curated mental health knowledge base or user-provided batch.
+    Ingest 500+ curated mental health knowledge base or user-provided batch.
     """
     docs_to_ingest = []
     if payload and payload.documents:
         docs_to_ingest = [d.model_dump() for d in payload.documents]
     elif payload and payload.reload_default_library or not payload or not payload.documents:
-        docs_to_ingest = KNOWLEDGE_DOCUMENTS
+        docs_to_ingest = KNOWLEDGE_DOCUMENTS_500
 
-    total_chunks = 0
-    for doc in docs_to_ingest:
-        chunks = rag_service.ingest_document(
-            doc_id=doc["id"],
-            title=doc["title"],
-            content=doc["content"],
-            category=doc.get("category", "General"),
-            author=doc.get("author"),
-            organization=doc.get("organization"),
-            source_url=doc.get("source_url"),
-            publication_date=doc.get("publication_date"),
-            licensing=doc.get("licensing")
-        )
-        total_chunks += chunks
+    total_chunks = rag_service.ingest_documents_batch(docs_to_ingest, batch_size=128)
+
+    return {
+        "message": f"Successfully ingested {len(docs_to_ingest)} curated resources into {total_chunks} chunks.",
+        "documents_processed": len(docs_to_ingest),
+        "total_chunks": total_chunks
+    }
 
     return {
         "message": f"Successfully ingested {len(docs_to_ingest)} documents into {total_chunks} chunks.",

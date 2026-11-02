@@ -1,0 +1,36 @@
+{
+  "test_name": "SQL-Backed Session Memory & Contextual Continuity Evaluation",
+  "timestamp": "2026-11-02T12:14:29.904418+00:00",
+  "metrics": {
+    "total_conversational_turns": 32,
+    "total_messages_persisted": 64,
+    "target_turns_threshold": 30,
+    "continuity_turns_achieved": 32,
+    "context_recall_dog_name": true,
+    "context_recall_profession": true,
+    "context_recall_worry_window": true,
+    "multi_user_isolation_passed": true,
+    "cold_restart_survival_passed": true,
+    "database_engine": "SQLite (mindcare.db)",
+    "persistence_integrity": "100%"
+  },
+  "sample_turns": [
+    {
+      "turn": 1,
+      "user": "Hi, my name is Alex. I am a management consultant and I have been experiencing s..."
+    },
+    {
+      "turn": 5,
+      "user": "When I get home from work, my golden retriever Barnaby always waits by the door and helps me co-regulate."
+    },
+    {
+      "turn": 10,
+      "user": "My favorite time to do the 15-minute worry window is at 5:00 PM with a cup of chamomile tea."
+    },
+    {
+      "turn": 31,
+      "user": "Alex here. Can you recall our conversation: what is my dog's name, what is my profession, and what time did I set my worry window for?",
+      "assistant_recall": "Of course, Alex! Across our journey together, I remember well:\n1. **Your dog:** Your golden retriever **Barnaby**, who warmly greets you and helps you..."
+    }
+  ]
+}

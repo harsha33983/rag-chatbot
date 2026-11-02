@@ -22,6 +22,7 @@ class MessageResponse(BaseModel):
     content: str
     sources: Optional[List[SourceReference]] = None
     is_crisis: bool = False
+    sentiment: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     class Config:

@@ -51,13 +51,25 @@ def test_e2e_flow():
     assert me_res.json()["email"] == test_email
     print("  [PASS] GET /api/auth/me succeeded.")
 
-    print("\n--- 3. Testing RAG Knowledge Status ---")
+    print("\n--- 3. Testing Sentiment Analysis Endpoint ---")
+    sent_res = client.post("/api/sentiment/predict", headers=headers, json={
+        "text": "My chest is tight and I can't catch my breath, I feel so panicked about the presentation tomorrow."
+    })
+    assert sent_res.status_code == 200, f"Sentiment endpoint failed: {sent_res.text}"
+    sent_data = sent_res.json()
+    assert sent_data["label"] in ["anxious", "fearful"]
+    assert sent_data["confidence"] > 0.4
+    assert "tone_strategy" in sent_data
+    assert "tone_instruction" in sent_data
+    print(f"  [PASS] 6-Class Sentiment classification: label='{sent_data['label']}' (conf={sent_data['confidence']:.2f}, tone='{sent_data['tone_strategy']}')")
+
+    print("\n--- 4. Testing RAG Knowledge Status ---")
     status_res = client.get("/api/knowledge/status", headers=headers)
     assert status_res.status_code == 200
-    assert status_res.json()["total_vectors"] > 0
-    print(f"  [PASS] Vector status verified: {status_res.json()['total_vectors']} chunks indexed.")
+    assert status_res.json()["total_vectors"] >= 500
+    print(f"  [PASS] Vector status verified: {status_res.json()['total_vectors']} chunks indexed across 500+ curated resources.")
 
-    print("\n--- 4. Testing Chat & Grounded RAG Generation ---")
+    print("\n--- 5. Testing Chat & Grounded RAG Generation ---")
     chat_res = client.post("/api/chat", headers=headers, json={
         "message": "I feel anxious and overwhelmed. Can you guide me through a 5-4-3-2-1 grounding exercise?"
     })
@@ -67,11 +79,13 @@ def test_e2e_flow():
     assert chat_data["is_crisis"] is False
     assert chat_data["sources"] is not None
     assert len(chat_data["sources"]) > 0
+    assert "sentiment" in chat_data and chat_data["sentiment"] is not None
     session_id = chat_data["session_id"]
     print(f"  [PASS] RAG response generated with {len(chat_data['sources'])} source citations.")
+    print(f"  [PASS] Sentiment attached: {chat_data['sentiment']['label']} (Adapted Tone: {chat_data['sentiment']['tone_strategy']})")
     print(f"  [PASS] Top source: '{chat_data['sources'][0]['title']}' (Score: {chat_data['sources'][0]['score']})")
 
-    print("\n--- 5. Testing Crisis Guardrail in Chat Endpoint ---")
+    print("\n--- 6. Testing Crisis Guardrail in Chat Endpoint ---")
     crisis_res = client.post("/api/chat", headers=headers, json={
         "session_id": session_id,
         "message": "I don't think I can go on living, I want to kill myself tonight"

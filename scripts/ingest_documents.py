@@ -1,6 +1,6 @@
 """
 Standalone Document Ingestion Script for MindCare AI RAG Knowledge Base.
-Supports ingesting default curated library, raw text files, markdown files, and PDFs.
+Supports ingesting 500+ curated mental wellness resources, raw text files, markdown files, and PDFs.
 """
 import sys
 import os
@@ -11,26 +11,17 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.app.services.rag_service import rag_service
-from knowledge_base.mental_wellness_library import KNOWLEDGE_DOCUMENTS
+from knowledge_base.mental_wellness_500 import KNOWLEDGE_DOCUMENTS_500
 
-def ingest_curated_library():
-    print(f"Ingesting {len(KNOWLEDGE_DOCUMENTS)} foundational mental wellness documents...")
-    total_chunks = 0
-    for doc in KNOWLEDGE_DOCUMENTS:
-        chunks = rag_service.ingest_document(
-            doc_id=doc["id"],
-            title=doc["title"],
-            content=doc["content"],
-            category=doc.get("category", "General"),
-            author=doc.get("author"),
-            organization=doc.get("organization"),
-            source_url=doc.get("source_url"),
-            publication_date=doc.get("publication_date"),
-            licensing=doc.get("licensing")
-        )
-        total_chunks += chunks
-        print(f"  Indexed '{doc['title']}' -> {chunks} chunks")
-    print(f"\nIngestion Complete! Total {total_chunks} chunks indexed into Qdrant collection '{rag_service.collection_name}'.")
+def ingest_500_library():
+    print(f"Ingesting {len(KNOWLEDGE_DOCUMENTS_500)} curated mental health resources into Qdrant...")
+    total_chunks = rag_service.ingest_documents_batch(KNOWLEDGE_DOCUMENTS_500, batch_size=128)
+    status = rag_service.get_status()
+    print(f"\nIngestion Complete!")
+    print(f"  Total Resources Processed: {len(KNOWLEDGE_DOCUMENTS_500)}")
+    print(f"  Total Chunks Indexed in Qdrant: {total_chunks}")
+    print(f"  Collection Name: '{status['collection_name']}'")
+    print(f"  Total Vectors in Store: {status['total_vectors']}")
 
 def ingest_directory(directory_path: str):
     dir_path = Path(directory_path)
@@ -42,7 +33,7 @@ def ingest_directory(directory_path: str):
     supported = [f for f in files if f.suffix.lower() in [".txt", ".md", ".pdf"]]
     print(f"Found {len(supported)} documents in {directory_path}...")
 
-    total_indexed = 0
+    docs = []
     for file_path in supported:
         title = file_path.stem.replace("_", " ").title()
         doc_id = f"doc_{file_path.stem.lower()}"
@@ -62,27 +53,25 @@ def ingest_directory(directory_path: str):
                 continue
 
         if text.strip():
-            chunks = rag_service.ingest_document(
-                doc_id=doc_id,
-                title=title,
-                content=text,
-                category="Clinical Library",
-                source_url=str(file_path)
-            )
-            total_indexed += chunks
-            print(f"  Indexed '{title}' ({file_path.name}) -> {chunks} chunks")
+            docs.append({
+                "id": doc_id,
+                "title": title,
+                "content": text,
+                "category": "Uploaded Document",
+                "source_url": str(file_path)
+            })
 
-    print(f"\nDirectory indexing complete! Total {total_indexed} chunks added.")
+    total_chunks = rag_service.ingest_documents_batch(docs)
+    print(f"\nDirectory indexing complete! Total {total_chunks} chunks added across {len(docs)} documents.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MindCare AI RAG Ingestion")
     parser.add_argument("--dir", type=str, help="Path to directory containing .txt, .md, or .pdf files")
-    parser.add_argument("--curated", action="store_true", default=True, help="Ingest built-in curated mental wellness documents")
+    parser.add_argument("--curated", action="store_true", default=True, help="Ingest 500+ curated mental wellness documents")
 
     args = parser.parse_args()
 
     if args.dir:
         ingest_directory(args.dir)
     else:
-        ingest_curated_library()
-
+        ingest_500_library()

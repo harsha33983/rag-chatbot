@@ -50,10 +50,12 @@ class LLMService:
         self,
         user_message: str,
         conversation_history: List[Dict[str, str]],
-        retrieved_sources: List[SourceReference]
+        retrieved_sources: List[SourceReference],
+        tone_instruction: Optional[str] = None
     ) -> str:
         """
-        Synthesizes empathetic, evidence-grounded response using LLM or robust fallback.
+        Synthesizes empathetic, evidence-grounded response using LLM or robust fallback,
+        dynamically adapting tone based on real-time emotional state classification.
         """
         # Format knowledge context
         context_text = ""
@@ -67,14 +69,47 @@ class LLMService:
         else:
             context_text = "\n(No high-confidence knowledge base articles found for this specific query.)"
 
-        prompt_with_context = f"""{context_text}
+        tone_block = f"\n[Real-Time Tone Adaptation Guidance]:\n{tone_instruction}\n" if tone_instruction else ""
 
+        prompt_with_context = f"""{context_text}
+{tone_block}
 User Query:
 {user_message}
 
-Please provide an empathetic, grounded response following your core directives."""
+Please provide an empathetic, grounded response following your core directives and adapted tone."""
 
-        # 1. Try Gemini if configured
+        # 1. Try Groq if configured (Ultra-fast inference via Groq LPUs)
+        groq_key = getattr(settings, "GROQ_API_KEY", None) or os.getenv("GROQ_API_KEY")
+        if (self.provider == "groq" or groq_key) and groq_key:
+            try:
+                import httpx
+                messages = [{"role": "system", "content": MINDCARE_SYSTEM_PROMPT}]
+                for msg in conversation_history:
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+                messages.append({"role": "user", "content": prompt_with_context})
+
+                headers = {
+                    "Authorization": f"Bearer {groq_key}",
+                    "Content-Type": "application/json"
+                }
+                groq_model = self.model_name if "/" in self.model_name or "gpt" in self.model_name else "openai/gpt-oss-120b"
+                payload = {
+                    "model": groq_model,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 1024
+                }
+                with httpx.Client(timeout=25.0) as client:
+                    res = client.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
+                    if res.status_code == 200:
+                        data = res.json()
+                        return data["choices"][0]["message"]["content"].strip()
+                    else:
+                        logger.warning(f"Groq API error {res.status_code}: {res.text}. Attempting fallback.")
+            except Exception as e:
+                logger.warning(f"Groq API call failed: {e}. Attempting fallback.")
+
+        # 2. Try Gemini if configured
         if self.provider == "gemini" or (settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")):
             try:
                 model = self._init_gemini()

@@ -148,6 +148,64 @@ class RAGService:
         logger.info(f"Successfully ingested {len(points)} chunks for doc {doc_id} ('{title}')")
         return len(points)
 
+    def ingest_documents_batch(self, documents: List[Dict[str, Any]], batch_size: int = 128) -> int:
+        """
+        High-performance batched ingestion for 500+ documents.
+        Extracts chunks across all documents, generates embeddings in batched tensors,
+        and uploads to Qdrant.
+        """
+        all_chunks = []
+        chunk_metadata = []
+
+        for doc in documents:
+            doc_id = doc["id"]
+            title = doc["title"]
+            category = doc.get("category", "General")
+            author = doc.get("author", "MindCare Research")
+            org = doc.get("organization", "Mental Wellness Alliance")
+            url = doc.get("source_url", "https://mindcare.ai/resources")
+            pub_date = doc.get("publication_date", "2024")
+            licensing = doc.get("licensing", "Educational")
+            content = doc.get("content", "")
+
+            chunks = self.text_splitter.split_text(content)
+            for i, chunk in enumerate(chunks):
+                all_chunks.append(chunk)
+                chunk_metadata.append({
+                    "document_id": doc_id,
+                    "chunk_index": i,
+                    "title": title,
+                    "category": category,
+                    "author": author,
+                    "organization": org,
+                    "source_url": url,
+                    "publication_date": pub_date,
+                    "licensing": licensing,
+                    "content": chunk
+                })
+
+        if not all_chunks:
+            return 0
+
+        # Encode in batches
+        all_points = []
+        for i in range(0, len(all_chunks), batch_size):
+            batch_texts = all_chunks[i:i + batch_size]
+            batch_meta = chunk_metadata[i:i + batch_size]
+            batch_embeddings = self.embedding_service.encode(batch_texts)
+
+            for meta, emb in zip(batch_meta, batch_embeddings):
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{meta['document_id']}_{meta['chunk_index']}"))
+                all_points.append(PointStruct(id=point_id, vector=emb, payload=meta))
+
+        # Upload points in batches of 200
+        for i in range(0, len(all_points), 200):
+            sub_points = all_points[i:i + 200]
+            self.client.upsert(collection_name=self.collection_name, points=sub_points)
+
+        logger.info(f"Successfully batch-ingested {len(all_points)} total chunks across {len(documents)} curated documents.")
+        return len(all_points)
+
     def search(self, query: str, top_k: int = None, threshold: float = None) -> List[SourceReference]:
         """
         Convert query into embedding, search Qdrant, filter by threshold,

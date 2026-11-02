@@ -11,8 +11,9 @@ from backend.app.api.auth import router as auth_router
 from backend.app.api.chat import router as chat_router
 from backend.app.api.knowledge import router as knowledge_router
 from backend.app.api.health import router as health_router
+from backend.app.api.sentiment import router as sentiment_router
 from backend.app.services.rag_service import rag_service
-from knowledge_base.mental_wellness_library import KNOWLEDGE_DOCUMENTS
+from knowledge_base.mental_wellness_500 import KNOWLEDGE_DOCUMENTS_500
 
 # Configure logging
 logging.basicConfig(
@@ -44,24 +45,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Demo user seeding warning: {e}")
 
-    # Ingest core curated knowledge if vector DB has 0 items
+    # Ingest 500+ curated mental health knowledge base if vector DB has less than 500 items
     try:
         status_info = rag_service.get_status()
-        if status_info.get("total_vectors", 0) == 0:
-            logger.info("Vector store is empty. Auto-ingesting foundational mental wellness library...")
-            for doc in KNOWLEDGE_DOCUMENTS:
-                rag_service.ingest_document(
-                    doc_id=doc["id"],
-                    title=doc["title"],
-                    content=doc["content"],
-                    category=doc.get("category", "General"),
-                    author=doc.get("author"),
-                    organization=doc.get("organization"),
-                    source_url=doc.get("source_url"),
-                    publication_date=doc.get("publication_date"),
-                    licensing=doc.get("licensing")
-                )
-            logger.info("Curated knowledge base successfully indexed.")
+        if status_info.get("total_vectors", 0) < len(KNOWLEDGE_DOCUMENTS_500):
+            logger.info(f"Vector store has {status_info.get('total_vectors', 0)} chunks. Ingesting full 500+ curated knowledge library...")
+            chunks_added = rag_service.ingest_documents_batch(KNOWLEDGE_DOCUMENTS_500, batch_size=128)
+            logger.info(f"Full mental health knowledge base successfully indexed ({chunks_added} chunks across {len(KNOWLEDGE_DOCUMENTS_500)} documents).")
     except Exception as e:
         logger.warning(f"Initial knowledge base seeding warning: {e}")
 
@@ -97,6 +87,7 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(chat_router, prefix=settings.API_V1_STR)
 app.include_router(knowledge_router, prefix=settings.API_V1_STR)
 app.include_router(health_router, prefix=settings.API_V1_STR)
+app.include_router(sentiment_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
