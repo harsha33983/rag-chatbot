@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Sparkles, Compass, Shield, Wind, Moon, HeartHandshake } from 'lucide-react';
+import { Sparkles, Compass, Shield, Wind, Moon, HeartHandshake, Zap, Brain, HelpCircle } from 'lucide-react';
 import { Message } from '../../types';
 import { MessageItem } from './MessageItem';
 
@@ -12,8 +12,23 @@ interface MessageListProps {
 const STARTER_PROMPTS = [
   {
     icon: Wind,
-    title: "Grounding Exercise",
+    title: "Grounding & Anxiety",
     prompt: "I'm feeling anxious right now. Can you guide me through the 5-4-3-2-1 somatic grounding technique?"
+  },
+  {
+    icon: Brain,
+    title: "Overthinking & Rumination",
+    prompt: "My mind won't stop racing with 'what if' scenarios. How does the Scheduled Worry Window work?"
+  },
+  {
+    icon: Zap,
+    title: "Procrastination & Freeze",
+    prompt: "I feel paralyzed and keep putting off my work. How can I use the 2-Minute Rule to start?"
+  },
+  {
+    icon: Compass,
+    title: "Imposter Syndrome",
+    prompt: "I feel like a fraud at work and worry everyone will find out. How can I challenge these feelings?"
   },
   {
     icon: Moon,
@@ -21,13 +36,8 @@ const STARTER_PROMPTS = [
     prompt: "I've been struggling to fall asleep lately. What evidence-based sleep hygiene tips can help reset my circadian rhythm?"
   },
   {
-    icon: Compass,
-    title: "CBT Restructuring",
-    prompt: "How can I identify and challenge cognitive distortions like catastrophizing when I have negative thoughts?"
-  },
-  {
     icon: HeartHandshake,
-    title: "Burnout Support",
+    title: "Burnout & Boundaries",
     prompt: "I feel completely exhausted and burned out by work. How do I establish healthy cognitive boundaries?"
   }
 ];

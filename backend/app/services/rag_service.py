@@ -72,8 +72,19 @@ class RAGService:
                 self.client = QdrantClient(url=settings.VECTOR_DATABASE_URL)
             else:
                 os.makedirs(settings.VECTOR_STORAGE_PATH, exist_ok=True)
-                logger.info(f"Using local Qdrant storage at {settings.VECTOR_STORAGE_PATH}")
-                self.client = QdrantClient(path=settings.VECTOR_STORAGE_PATH)
+                lock_file = os.path.join(settings.VECTOR_STORAGE_PATH, ".lock")
+                try:
+                    self.client = QdrantClient(path=settings.VECTOR_STORAGE_PATH)
+                except Exception as lock_err:
+                    if "already accessed" in str(lock_err).lower() and os.path.exists(lock_file):
+                        try:
+                            os.remove(lock_file)
+                            logger.info("Cleared stale Qdrant lock file.")
+                            self.client = QdrantClient(path=settings.VECTOR_STORAGE_PATH)
+                        except Exception:
+                            raise lock_err
+                    else:
+                        raise lock_err
 
             collections = self.client.get_collections().collections
             exists = any(c.name == self.collection_name for c in collections)

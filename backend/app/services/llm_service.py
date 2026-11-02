@@ -17,7 +17,7 @@ Your Core Directives:
    - NEVER claim to provide clinical medical advice.
    - Always encourage consulting a qualified mental health professional or physician for clinical evaluation.
 3. RAG Grounding & Source Citation:
-   - Use the provided retrieved knowledge base contexts whenever relevant to answer questions about coping strategies, CBT, DBT, mindfulness, sleep hygiene, grounding, and mental wellness.
+   - Use the provided retrieved knowledge base contexts whenever relevant to answer questions about coping strategies, CBT, DBT, ACT, mindfulness, sleep hygiene, grounding, panic de-escalation, imposter syndrome, ADHD coping, and mental wellness.
    - Mention the concepts or techniques referenced from the sources naturally.
    - If the user asks a question about something not in your knowledge base and you are uncertain, honestly acknowledge the limitation instead of fabricating an answer.
 4. Style:
@@ -122,7 +122,7 @@ Please provide an empathetic, grounded response following your core directives."
             except Exception as e:
                 logger.warning(f"OpenAI API call failed: {e}. Using intelligent fallback.")
 
-        # 3. Empathetic Fallback Engine (Reliable, evidence-grounded, zero-crash)
+        # 3. Empathetic Grounded Fallback Engine
         return self._generate_grounded_fallback(user_message, retrieved_sources)
 
     def _generate_grounded_fallback(
@@ -131,8 +131,8 @@ Please provide an empathetic, grounded response following your core directives."
         retrieved_sources: List[SourceReference]
     ) -> str:
         """
-        High quality, empathetic, grounded response synthesis when API keys are not supplied
-        or third-party providers are temporarily unreachable.
+        Empathetic, evidence-grounded response synthesis when external LLM API keys
+        are not configured or when third-party servers are temporarily unreachable.
         """
         user_lower = user_message.lower()
 
@@ -151,10 +151,113 @@ Please provide an empathetic, grounded response following your core directives."
             )
             sources_note = ""
 
-        # Empathetic framing based on topic cues
-        if any(w in user_lower for w in ["anxious", "anxiety", "panic", "worry", "fear"]):
+        # Topic 1: Panic Attacks & Severe Acute Physical Anxiety
+        if any(w in user_lower for w in ["panic attack", "heart racing", "can't breathe", "hyperventilat", "dizzy and shaking"]):
             return (
-                f"Thank you for sharing that with me. Experiencing anxiety or worry can feel truly exhausting, "
+                f"I hear how intense and frightening these sensations feel right now. Please take comfort in knowing: "
+                f"**Panic attacks are biologically self-limiting.** Your autonomic nervous system cannot sustain an adrenaline peak indefinitely; "
+                f"it will naturally begin to downregulate within 10 to 15 minutes.\n\n"
+                f"{evidence_summary}"
+                f"**Immediate Somatic Reset:**\n"
+                f"1. **Drop your shoulders and loosen your jaw.**\n"
+                f"2. **Paced Breathing:** Inhale gently through your nose for 4 counts, hold for 2, and breathe out very slowly through pursed lips for 6 to 8 counts.\n"
+                f"3. Splash cold water on your face to trigger the mammalian dive reflex.\n\n"
+                f"You are safe in this moment. What is one object you can touch around you right now?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 2: Overthinking, Rumination & Racing Thoughts
+        elif any(w in user_lower for w in ["overthink", "rumination", "racing thought", "can't stop thinking", "in my head"]):
+            return (
+                f"Overthinking can feel like an exhausting mental loop that runs endlessly. It is very common, "
+                f"especially when our minds are trying to protect us from uncertainty.\n\n"
+                f"{evidence_summary}"
+                f"A powerful technique is the **Scheduled Worry Window**: instead of battling the intrusive thoughts all day, "
+                f"write them down and designate 15 minutes in the late afternoon to review them. Tell your mind: 'I hear this, but its time is 4:30 PM.'\n\n"
+                f"Which thought is feeling loudest for you right now?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 3: Procrastination & Task Initiation Paralysis
+        elif any(w in user_lower for w in ["procrastinat", "can't start", "putting off", "avoiding work", "paralyzed to start"]):
+            return (
+                f"Thank you for sharing that. Procrastination is almost never laziness; it is an emotional regulation challenge "
+                f"where the brain protects itself from feelings of dread, perfectionism, or fear of failure.\n\n"
+                f"{evidence_summary}"
+                f"Try using the **2-Minute Implementation Rule**: commit to opening the document or doing the first physical step "
+                f"for only 120 seconds. Give yourself full permission to stop after 2 minutes. Usually, crossing that initial threshold "
+                f"breaks the mental freeze.\n\n"
+                f"What is the single smallest, lowest-friction step you could take today?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 4: Imposter Syndrome & Workplace Insecurity
+        elif any(w in user_lower for w in ["imposter", "fraud", "not smart enough", "faking it", "don't belong"]):
+            return (
+                f"Feeling like an imposter is an intensely common experience among conscientious, high-achieving individuals. "
+                f"It is important to remember: **feelings of doubt are not facts about your competence.**\n\n"
+                f"{evidence_summary}"
+                f"Remind yourself that your human worth is not tied to flawless execution. Try creating an 'Evidence Portfolio' "
+                f"of real problems you've solved and praise you've received to ground yourself in verifiable data rather than emotional appraisals.\n\n"
+                f"What is one accomplishment or challenge you overcame that you are genuinely proud of?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 5: Social Anxiety & Fear of Evaluation
+        elif any(w in user_lower for w in ["social anxiety", "awkward", "everyone is judging", "parties", "talking to people"]):
+            return (
+                f"Navigating social situations with anxiety can feel like being under a blinding spotlight. "
+                f"Psychologists call this the **Spotlight Effect**—we dramatically overestimate how much others notice our nervousness.\n\n"
+                f"{evidence_summary}"
+                f"Try **Attention Externalization**: instead of tracking your heart rate or vocal tone, consciously focus on the other "
+                f"person's words, the ambient music, or the colors in the room. This takes the cognitive load off your internal alarm system.\n\n"
+                f"What social setting is feeling most daunting for you right now?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 6: Breakup, Heartbreak & Relationship Loss
+        elif any(w in user_lower for w in ["breakup", "heartbreak", "heartbroken", "my ex", "dumped", "ended things"]):
+            return (
+                f"I am so sorry you are going through this. The end of a relationship triggers genuine neurobiological withdrawal—"
+                f"your brain's attachment and reward centers are processing a profound loss of shared routines and safety.\n\n"
+                f"{evidence_summary}"
+                f"Be gentle with yourself. Mourning both the person and the future you envisioned is completely normal. "
+                f"Prioritize simple grounding routines: staying hydrated, sleeping consistently, and leaning on trusted friends.\n\n"
+                f"How are you holding up physically today?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 7: Loneliness & Disconnection
+        elif any(w in user_lower for w in ["lonely", "alone", "isolated", "no friends", "nobody cares"]):
+            return (
+                f"Loneliness can feel profoundly heavy, and I want to honor how honest it is of you to express it. "
+                f"Loneliness is simply a biological signal indicating that your natural human need for belonging is asking for nourishment.\n\n"
+                f"{evidence_summary}"
+                f"Even small daily bids for connection—a friendly exchange with a barista, a short message to an acquaintance, "
+                f"or sitting in a shared park or library—can begin signaling safety to your social nervous system.\n\n"
+                f"Is there one person in your life you feel comfortable sending a quick 'thinking of you' message to today?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 8: Anger & Irritability
+        elif any(w in user_lower for w in ["angry", "irritat", "mad", "losing my temper", "rage", "frustrated"]):
+            return (
+                f"It is completely valid to feel anger. Anger is often the visible top of the **Anger Iceberg**, "
+                f"acting as a protective armor for deeper vulnerable feelings like hurt, exhaustion, or feeling unappreciated.\n\n"
+                f"{evidence_summary}"
+                f"When you feel the wave rising, practice the **STOP protocol**: Stop physical action, Take a slow belly breath, "
+                f"Observe what is happening inside without judgment, and Proceed with assertive intention rather than an explosive reaction.\n\n"
+                f"What feeling might be hiding beneath the frustration right now?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 9: Executive Dysfunction, ADHD & Cognitive Overload
+        elif any(w in user_lower for w in ["adhd", "executive function", "brain fog", "can't focus", "scattered"]):
+            return (
+                f"Struggling with executive function is exhausting because your brain's management system is experiencing cognitive overload. "
+                f"This is not a character flaw or laziness.\n\n"
+                f"{evidence_summary}"
+                f"Consider using **Body Doubling** (working in the presence of someone else or a virtual study stream) and externalizing "
+                f"your memory onto visual sticky notes or whiteboards so your prefrontal cortex doesn't have to juggle tasks internally.\n\n"
+                f"What is the main task competing for your focus right now?\n\n{sources_note}"
+            ).strip()
+
+        # Topic 10: General Anxiety & Stress
+        elif any(w in user_lower for w in ["anxious", "anxiety", "worry", "fear", "nervous"]):
+            return (
+                f"Thank you for sharing that with me. Experiencing anxiety can feel exhausting, "
                 f"and it is completely understandable to feel unsettled right now.\n\n"
                 f"{evidence_summary}"
                 f"A gentle exercise you might try right now is taking three slow, deliberate diaphragmatic breaths—letting "
@@ -162,51 +265,54 @@ Please provide an empathetic, grounded response following your core directives."
                 f"What part of this is feeling most challenging for you right now?\n\n{sources_note}"
             ).strip()
 
-        elif any(w in user_lower for w in ["sad", "depressed", "down", "low", "hopeless", "tired", "empty"]):
-            return (
-                f"I hear how heavy things feel for you right now, and I want to acknowledge how much courage it takes "
-                f"to put these feelings into words.\n\n"
-                f"{evidence_summary}"
-                f"When your energy is low, remember to treat yourself with gentle kindness. Even small steps, like stepping "
-                f"outside for a few moments or sipping some water, can be meaningful acts of self-care.\n\n"
-                f"Would you like to talk more about what's been weighing on you today?\n\n{sources_note}"
-            ).strip()
-
+        # Topic 11: Sleep & Insomnia
         elif any(w in user_lower for w in ["sleep", "insomnia", "awake", "tired", "bed", "night"]):
             return (
-                f"Struggling with sleep can deeply affect your mood, energy, and overall resilience during the day. "
+                f"Struggling with sleep deeply affects your resilience, mood, and cognitive clarity. "
                 f"It is so frustrating when you want to rest but your mind or body won't cooperate.\n\n"
                 f"{evidence_summary}"
-                f"If you've been lying in bed unable to sleep for more than 20 minutes, try sitting in a comfortable chair "
-                f"with soft lighting and doing a quiet, screen-free activity until you begin to feel drowsy.\n\n"
-                f"How has your sleep routine felt over the past few days?\n\n{sources_note}"
+                f"Remember the **20-minute rule**: if you cannot fall asleep after roughly 20 minutes, get out of bed into dim lighting "
+                f"and do a quiet, non-screen activity until drowsiness returns. This protects your conditioned bed-sleep association.\n\n"
+                f"How has your wind-down routine felt over the past few days?\n\n{sources_note}"
             ).strip()
 
+        # Topic 12: Burnout & Workplace Exhaustion
         elif any(w in user_lower for w in ["burnout", "stress", "work", "overwhelmed", "exhausted", "deadline"]):
             return (
-                f"Feeling overwhelmed or stretched to your limit is a very real biological signal that your system needs "
-                f"restoration and clearer boundaries.\n\n"
+                f"Feeling stretched past your limit is a real biological indicator that your system needs restoration and clearer boundaries.\n\n"
                 f"{evidence_summary}"
                 f"Give yourself permission to pause for even five minutes today to disengage from screens and release tension "
                 f"in your shoulders and jaw.\n\n"
                 f"What is one commitment or task you could step away from or delegate today?\n\n{sources_note}"
             ).strip()
 
+        # Topic 13: Low Mood & Sadness
+        elif any(w in user_lower for w in ["sad", "depressed", "down", "low", "hopeless", "crying"]):
+            return (
+                f"I hear how heavy things feel for you right now, and I want to acknowledge how much courage it takes "
+                f"to put these feelings into words.\n\n"
+                f"{evidence_summary}"
+                f"When energy is low, treat yourself with unconditional gentleness. Even small micro-steps—like sipping warm tea "
+                f"or sitting in natural light—are meaningful acts of care.\n\n"
+                f"Would you like to talk more about what has been weighing on your heart?\n\n{sources_note}"
+            ).strip()
+
+        # Greetings
         elif any(w in user_lower for w in ["hello", "hi", "hey", "greetings"]):
             return (
                 "Hello! I'm MindCare AI. I'm here to listen, offer supportive coping strategies, and help you reflect in a safe, "
-                "non-judgmental space.\n\n"
+                "non-judgmental space grounded in wellness research.\n\n"
                 "How are you feeling today, and what's on your mind?"
             )
 
+        # Default Grounded Reflection
         else:
             return (
                 f"Thank you for opening up and sharing that with me. It is completely valid to reflect on what you are experiencing.\n\n"
                 f"{evidence_summary}"
                 f"I'm here to support you in exploring your thoughts and feelings. Please remember that while I can offer guidance "
-                f"grounded in wellness research, reaching out to a therapist or trusted friend is always a powerful way to get personalized support.\n\n"
+                f"grounded in wellness research, reaching out to a therapist or trusted friend is always a wonderful option for personalized care.\n\n"
                 f"How does that resonate with you, and where would you like to explore next?\n\n{sources_note}"
             ).strip()
 
 llm_service = LLMService()
-
